@@ -3,12 +3,19 @@
 if [ ! -f /etc/bareos/bareos-director-config.control ]; then
   # Populate host volume map with package defaults from docker build steps:
   tar xfz /bareos-dir-d.tgz --backup=simple --suffix=.before-director-config --strip 2 --directory /etc/bareos
-  # Director 'Storage' host/pass
+  # Credentials for default 'MyCatalog'
+  sed -i 's#dbname = .*#dbname = '\""${DB_NAME}"\"'#' \
+    /etc/bareos/bareos-dir.d/catalog/MyCatalog.conf
+  sed -i 's#dbuser = .*#dbuser = '\""${DB_USER}"\"'#' \
+    /etc/bareos/bareos-dir.d/catalog/MyCatalog.conf
+  sed -i 's#dbpassword = .*#dbpassword = '\""${DB_PASSWORD}"\"'#' \
+    /etc/bareos/bareos-dir.d/catalog/MyCatalog.conf
+  # Director 'Storage' host/pass (Default Name File, Device = FileStorage)
   sed -i 's#Address = .*#Address = '\""${BAREOS_SD_HOST}"\"'#' \
     /etc/bareos/bareos-dir.d/storage/File.conf
   sed -i 's#Password = .*#Password = '\""${BAREOS_SD_PASSWORD}"\"'#' \
     /etc/bareos/bareos-dir.d/storage/File.conf
-  # Director 'Client' host/pass
+  # Director 'Client' host/pass (default Name bareos-fd)
   sed -i 's#Address = .*#Address = '\""${BAREOS_FD_HOST}"\"'#' \
     /etc/bareos/bareos-dir.d/client/bareos-fd.conf
   sed -i 's#Password = .*#Password = '\""${BAREOS_FD_PASSWORD}"\"'#' \

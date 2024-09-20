@@ -56,7 +56,7 @@ https://hub.docker.com/_/postgres
 **Admin credentials for DB init**
 (var baros - var postgres)
 - DB_ADMIN_USER = 'postgres' (default) admin user in postgres container
-- DB_ADMIN_PASSWORD = POSTGRES_PASSWORD (from postgres image)
+- DB_ADMIN_PASSWORD = POSTGRES_PASSWORD (from 'postgres:14' docker image)
 
 **Remote DB authentication via .pgpass file** 
 - DB_HOST: postgres container name (bareos-db)
@@ -79,29 +79,46 @@ https://hub.docker.com/_/postgres
 - . indicates from-current directory
 
 ```
-docker build -t bareos-director .
+docker build -t bareos-dir .
+```
+
+## Required Catalog (Postgres DB)
+
+### dev-net
+Development only docker network to enable inter container communication:
+```shell
+docker network create devnet
+docker network ls
+docker network inspect devnet
+```
+
+### bareos-db
+Example docker invocation of Postgres 14 as our 'remote' Catalog DB host:
+```shell
+docker run --name bareos-db -e POSTGRES_PASSWORD=pg-admin-pass -e POSTGRES_INITDB_ARGS=--encoding=SQL_ASCII\
+ -v ./catalog:/var/lib/postgresql/data --network=devnet -d postgres:14
 ```
 
 ## Local Run
 
-```
-docker run --name bareos-director
-# mount ./config dir (bareos:bareos assumed) at /etc/bareos within container:
-docker run -u 105 -it -e DB_ADMIN_USER='postgres' -e DB_ADMIN_PASSWORD='pg-admin-pass'\
- -e DB_HOST='director-db' -e DB_NAME='bareos' -e DB_USER='bareos' -e DB_PASSWORD='bareos-db-user-pass'
- -e BAREOS_SD_NAME='bareos-sd' -e BAREOS_SD_PASSWORD='bareos-sd-pass'\
- -e BAREOS_FD_NAME='bareos-fd' -e BAREOS_FD_PASSWORD='bareos-fd-pass'\
+```shell
+docker run --name bareos-dir
+# mount local ./config & ./data dir (bareos:bareos assumed) at /etc/bareos & /var/lib/bareos within container:
+docker run --name bareos-dir -u 105 -it -e DB_ADMIN_USER='postgres' -e DB_ADMIN_PASSWORD='pg-admin-pass'\
+ -e DB_HOST='bareos-db' -e DB_PORT='5432' -e DB_NAME='bareos' -e DB_USER='bareos' -e DB_PASSWORD='bareos-db-user-pass'\
+ -e BAREOS_SD_HOST='bareos-sd' -e BAREOS_SD_PASSWORD='bareos-sd-pass'\
+ -e BAREOS_FD_HOST='bareos-fd' -e BAREOS_FD_PASSWORD='bareos-fd-pass'\
  -e BAREOS_WEBUI_PASSWORD='webui-pass' -v ./config:/etc/bareos -v ./data:/var/lib/bareos\
- --name bareos-dir bareos-dir sh
-
+ --network=devnet bareos-dir sh
+#
 # skip entrypoint and run shell
-docker run -it --entrypoint sh bareos-director
+docker run --name bareos-dir -u 105 -it --entrypoint sh bareos-director
 ```
 
 ## Interactive shell
 
 ```
-docker exec -it bareos-director sh
+docker exec -it bareos-dir sh
 ```
 
 ## BareOS rpm package scriptlet actions

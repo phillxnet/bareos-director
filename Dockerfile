@@ -51,8 +51,7 @@ EOF
 # Stash default package config: ready to populare host volume mapping
 # https://docs.bareos.org/Configuration/CustomizingTheConfiguration.html#subdirectory-configuration-scheme
 RUN tar czf bareos-dir-d.tgz /etc/bareos/bareos-dir.d
-RUN COPY /etc/bareos/bconsole.conf /bconsole.conf-default
-
+# COPY /etc/bareos/bconsole.conf ./bconsole.conf-default
 # Director WebUI Console template
 # https://docs.bareos.org/IntroductionAndTutorial/BareosWebui.html#create-a-restricted-consoles
 # - https://raw.githubusercontent.com/bareos/bareos/master/webui/install/bareos/bareos-dir.d/console/admin.conf.example
