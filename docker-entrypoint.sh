@@ -3,6 +3,7 @@
 if [ ! -f /etc/bareos/bareos-director-config.control ]; then
   # Populate host volume map with package defaults from docker build steps:
   tar xfz /bareos-dir-d.tgz --backup=simple --suffix=.before-director-config --strip 2 --directory /etc/bareos
+  tar xfz /bareos-dir-export.tgz --backup=simple --suffix=.before-director-config --strip 2 --directory /etc/bareos
   # Credentials for default 'MyCatalog'
   sed -i 's#dbname = .*#dbname = '\""${DB_NAME}"\"'#' \
     /etc/bareos/bareos-dir.d/catalog/MyCatalog.conf
@@ -39,7 +40,9 @@ if [ ! -f /etc/bareos/bareos-director-config.control ]; then
 fi
 
 if [ ! -f /etc/bareos/bareos-bconsole-config.control ]; then
-  # TODO sed /etc/bareos/bconsole.conf re password from env var or use BAREOS_WEBUI_PASSWORD
+  sed 's#Password = .*#Password = '\""${BAREOS_BCONSOLE_PASSWORD}"\"'#' \
+    /bconsole.conf-default > /etc/bareos/bconsole.conf
+  chmod 640 /etc/bareos/bconsole.conf
   touch /etc/bareos/bareos-bconsole-config.control
 fi
 

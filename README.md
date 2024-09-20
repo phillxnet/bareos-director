@@ -70,6 +70,10 @@ https://hub.docker.com/_/postgres
 - BAREOS_SD_HOST/BAREOS_SD_PASSWORD 
 - BAREOS_FD_HOST/BAREOS_FD_PASSWORD
 
+### Bconsole CLI client config
+
+- BAREOS_BCONSOLE_PASSWORD: bconsole access password
+
 ### WEBUI credentials
 
 - BAREOS_WEBUI_PASSWORD
@@ -109,6 +113,7 @@ docker run --name bareos-dir -u 105 -it -e DB_ADMIN_USER='postgres' -e DB_ADMIN_
  -e BAREOS_SD_HOST='bareos-sd' -e BAREOS_SD_PASSWORD='bareos-sd-pass'\
  -e BAREOS_FD_HOST='bareos-fd' -e BAREOS_FD_PASSWORD='bareos-fd-pass'\
  -e BAREOS_WEBUI_PASSWORD='webui-pass' -v ./config:/etc/bareos -v ./data:/var/lib/bareos\
+ -e BAREOS_BCONSOLE_PASSWORD='bconsole-pass'\
  --network=devnet bareos-dir sh
 #
 # skip entrypoint and run shell
