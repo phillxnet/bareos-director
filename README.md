@@ -1,4 +1,6 @@
-# BareOS Director
+# Bareos Director
+
+Bareos (Backup Archiving REcovery Open Sourced) Architecture overview: https://www.bareos.com/software/
 
 Follows Bareos's own install instructions as closely as possible: given container limitations.
 Initially uses only Bareos distributed community packages [Bareos Community Repository](https://download.bareos.org/current) `Current` variant.
@@ -16,6 +18,35 @@ Inspired & informed by the many years of Bareos container maintenance done by Ma
 This images /etc/bareos is intended to be shared by same-author storage, webui, and dir-local-file containers.
 The intention here is to simplifying/containerise a Bareos server set deployment:
 i.e. Director/Catalog/Storage/File/WebUI server set
+
+## Container User context
+
+The Bareos 'Director' normally runs as the `bareos` user & primary group,
+which are created by the packages themselves.
+In this image's case we create them beforehand to ensure know UID:GID; see next subsection. 
+The additional groups of disk,tape are also expected for the Storage daemon specifically.
+
+> groups bareos' returns: "bareos : bareos disk tape"
+
+### Host User configuration
+
+This image uses the dockerfile [USER](https://docs.docker.com/reference/dockerfile/#user) directive.
+A matching host user:group (by UID & GID) of 105:105 is required on the container host system.
+
+As container to host mapping is via UID:GID only,
+it is required to be explicit: enabling mapped volumes' permissions,
+and in the case of the Storage daemon specifically,
+special capabilities & (disk,tape) group membership.
+
+To create a container matching 'bareos' group (gid=105) execute:
+```shell
+groupadd --system --gid 105 bareos
+```
+And to create the matching 'bareos' user (uid=105) in this group, with supplementary groups disk,tape:
+```shell
+useradd --system --uid 105 --comment "bareos" --home-dir /var/lib/bareos -g bareos -G disk,tape --shell /bin/false bareos
+```
+N.B. in the above, /var/lib/bareos is not required or created on the host.
 
 ## Environmental Variables
 
@@ -55,6 +86,14 @@ docker build -t bareos-director .
 
 ```
 docker run --name bareos-director
+# mount ./config dir (bareos:bareos assumed) at /etc/bareos within container:
+docker run -u 105 -it -e DB_ADMIN_USER='postgres' -e DB_ADMIN_PASSWORD='pg-admin-pass'\
+ -e DB_HOST='director-db' -e DB_NAME='bareos' -e DB_USER='bareos' -e DB_PASSWORD='bareos-db-user-pass'
+ -e BAREOS_SD_NAME='bareos-sd' -e BAREOS_SD_PASSWORD='bareos-sd-pass'\
+ -e BAREOS_FD_NAME='bareos-fd' -e BAREOS_FD_PASSWORD='bareos-fd-pass'\
+ -e BAREOS_WEBUI_PASSWORD='webui-pass' -v ./config:/etc/bareos -v ./data:/var/lib/bareos\
+ --name bareos-dir bareos-dir sh
+
 # skip entrypoint and run shell
 docker run -it --entrypoint sh bareos-director
 ```

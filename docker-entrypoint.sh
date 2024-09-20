@@ -1,36 +1,8 @@
 #!/usr/bin/sh
 
-# https://docs.bareos.org/IntroductionAndTutorial/InstallingBareos.html#install-on-suse-based-linux-distributions
-# https://docs.bareos.org/IntroductionAndTutorial/WhatIsBareos.html#bareos-binary-release-policy
-
-# ADD REPOS (COMMUNIT OR SUBSCRIPTION)
-# Later pick according to variables entered at Rock-on
-# - empty = community
-# - BareOS subscription credentials = Subscription repository
-
-# Official Bareos Subscription Repository
-# - https://download.bareos.com/bareos/release/
-# User + Pass entered in the following retrieves the script pre-edited:
-# wget https://download.bareos.com/bareos/release/23/SUSE_15/add_bareos_repositories.sh
-# or
-# wget https://download.bareos.com/bareos/release/23/SUSE_15/add_bareos_repositories_template.sh
-# sed edit with BareOS subscription credentials and execute it.
-
-# Community current: https://download.bareos.org/current
-# - wget https://download.bareos.org/current/SUSE_15/add_bareos_repositories.sh
-
-if [ ! -f  /etc/bareos/bareos-director-install.control ]; then
-  # Retrieve and Run Bareos's official repository config script
-  wget https://download.bareos.org/current/SUSE_15/add_bareos_repositories.sh
-  sh ./add_bareos_repositories.sh
-  zypper --non-interactive --gpg-auto-import-keys refresh
-  # Director daemon & bconsole cli client
-  zypper --non-interactive install bareos-director bareos-bconsole
-  # Control file
-  touch /etc/bareos/bareos-director-install.control
-fi
-
 if [ ! -f /etc/bareos/bareos-director-config.control ]; then
+  # Populate host volume map with package defaults from docker build steps:
+  tar xfz /bareos-dir-d.tgz --backup=simple --suffix=.before-director-config --strip 2 --directory /etc/bareos
   # Director 'Storage' host/pass
   sed -i 's#Address = .*#Address = '\""${BAREOS_SD_HOST}"\"'#' \
     /etc/bareos/bareos-dir.d/storage/File.conf
@@ -64,7 +36,7 @@ if [ ! -f /etc/bareos/bareos-bconsole-config.control ]; then
   touch /etc/bareos/bareos-bconsole-config.control
 fi
 
-if [ -z ${CI_TEST} ] ; then
+if [ -z "${CI_TEST}" ] ; then
   # Waiting Postgresql is up
   sqlup=1
   while [ "$sqlup" -ne 0 ] ; do
@@ -116,10 +88,6 @@ if [ "${DB_UPDATE}" = 'true' ] ; then
   echo "Bareoos DB update: Grant privileges"
   /etc/bareos/scripts/grant_bareos_privileges  2>/dev/null
 fi
-
-# Fix permissions
-# find /etc/bareos ! -user bareos -exec chown bareos {} \;
-# chown -R bareos:bareos /var/lib/bareos /var/log/bareos
 
 # Run Dockerfile CMD
 exec "$@"
