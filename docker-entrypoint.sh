@@ -3,7 +3,7 @@
 if [ ! -f /etc/bareos/bareos-director-config.control ]; then
   # Populate host volume map with package defaults from docker build steps:
   tar xfz /bareos-dir-d.tgz --backup=simple --suffix=.before-director-config --strip 2 --directory /etc/bareos
-  tar xfz /bareos-dir-export.tgz --backup=simple --suffix=.before-director-config --strip 2 --directory /etc/bareos
+  chmod 640 /etc/bareos/bconsole.conf
   # Credentials for default 'MyCatalog'
   sed -i 's#dbname = .*#dbname = '\""${DB_NAME}"\"'#' \
     /etc/bareos/bareos-dir.d/catalog/MyCatalog.conf
@@ -37,13 +37,6 @@ if [ ! -f /etc/bareos/bareos-director-config.control ]; then
 
   # Control file
   touch /etc/bareos/bareos-director-config.control
-fi
-
-if [ ! -f /etc/bareos/bareos-bconsole-config.control ]; then
-  sed 's#Password = .*#Password = '\""${BAREOS_BCONSOLE_PASSWORD}"\"'#' \
-    /bconsole.conf-default > /etc/bareos/bconsole.conf
-  chmod 640 /etc/bareos/bconsole.conf
-  touch /etc/bareos/bareos-bconsole-config.control
 fi
 
 if [ -z "${CI_TEST}" ] ; then
@@ -83,9 +76,10 @@ if [ ! -f /etc/bareos/bareos-db.control ] && [ "${DB_INIT}" = 'true' ] ; then
   psql -c "create user ${DB_USER} with createdb createrole login;"
   echo "Bareos DB init: Set user password"
   psql -c "alter user ${DB_USER} password '${DB_PASSWORD}';"
-  /etc/bareos/scripts/create_bareos_database 2>/dev/null
-  /etc/bareos/scripts/make_bareos_tables  2>/dev/null
-  /etc/bareos/scripts/grant_bareos_privileges  2>/dev/null
+  # the following scripts are installed by bareos-database-common
+  /usr/lib/bareos/scripts/create_bareos_database 2>/dev/null
+  /usr/lib/bareos/scripts/make_bareos_tables 2>/dev/null
+  /usr/lib/bareos/scripts/grant_bareos_privileges 2>/dev/null
 
   touch /etc/bareos/bareos-db.control
 fi
@@ -94,9 +88,9 @@ if [ "${DB_UPDATE}" = 'true' ] ; then
   # Try Postgres upgrade
   echo "Bareoos DB update"
   echo "Bareoos DB update: Update tables"
-  /etc/bareos/scripts/update_bareos_tables  2>/dev/null
+  /usr/lib/bareos/scripts/update_bareos_tables 2>/dev/null
   echo "Bareoos DB update: Grant privileges"
-  /etc/bareos/scripts/grant_bareos_privileges  2>/dev/null
+  /usr/lib/bareos/scripts/grant_bareos_privileges 2>/dev/null
 fi
 
 # Run Dockerfile CMD

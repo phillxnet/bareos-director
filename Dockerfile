@@ -51,9 +51,7 @@ EOF
 # Stash default package config: ready to populare host volume mapping
 # https://docs.bareos.org/Configuration/CustomizingTheConfiguration.html#subdirectory-configuration-scheme
 RUN ls -la /etc/bareos > /etc/bareos/bareos-dir.d/package-default-permissions.txt
-RUN tar czf bareos-dir-d.tgz /etc/bareos/bareos-dir.d
-RUN tar czf bareos-dir-export.tgz /etc/bareos/bareos-dir-export
-RUN cp -a /etc/bareos/bconsole.conf /bconsole.conf-default
+RUN tar czf bareos-dir-d.tgz /etc/bareos/bareos-dir.d /etc/bareos/bareos-dir-export /etc/bareos/bconsole.conf
 
 # Director WebUI Console template
 # https://docs.bareos.org/IntroductionAndTutorial/BareosWebui.html#create-a-restricted-consoles
@@ -66,8 +64,8 @@ RUN cp -a /etc/bareos/bconsole.conf /bconsole.conf-default
 COPY admin.conf.example /admin.conf.example
 COPY webui-admin.conf /webui-admin.conf
 
-COPY docker-entrypoint.sh /docker-entrypoint.sh
-RUN chmod u+x /docker-entrypoint.sh
+COPY docker-entrypoint.sh /usr/local/sbin/docker-entrypoint.sh
+RUN chmod u+x /usr/local/sbin/docker-entrypoint.sh
 
 # BareOS services have WorkingDirectory=/var/lib/bareos
 # https://docs.docker.com/reference/dockerfile/#workdir
@@ -85,5 +83,5 @@ EXPOSE 9101
 # See README.md 'Host User configuration' section.
 USER bareos
 
-ENTRYPOINT ["/docker-entrypoint.sh"]
+ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["/usr/sbin/bareos-dir",  "--foreground", "--debug-level", "1"]

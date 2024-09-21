@@ -55,8 +55,14 @@ https://hub.docker.com/_/postgres
 
 **Admin credentials for DB init**
 (var baros - var postgres)
-- DB_ADMIN_USER = 'postgres' (default) admin user in postgres container
+- DB_ADMIN_USER = 'postgres' default admin user in official postgres container
 - DB_ADMIN_PASSWORD = POSTGRES_PASSWORD (from 'postgres:14' docker image)
+
+**Create new Catalog/DB**
+If /etc/bareos/bareos-db.control does not exist,
+and this flag is 'true' created the required Catalog/DB,
+and finally create the flag file /etc/bareos/bareos-db.control.
+- DB_INIT: 'true' enables the creation of a new default Catalog (MyCatalog).
 
 **Remote DB authentication via .pgpass file** 
 - DB_HOST: postgres container name (bareos-db)
@@ -72,7 +78,11 @@ https://hub.docker.com/_/postgres
 
 ### Bconsole CLI client config
 
-- BAREOS_BCONSOLE_PASSWORD: bconsole access password
+This container includes a local bconsole client install,
+pre-configured via upstream package scripts with this containers 'Director' credentials.
+See:
+- /etc/bareos/bareos-dir.d/director/bareos-dir.conf
+- /etc/bareos/bconsole.conf
 
 ### WEBUI credentials
 
@@ -86,44 +96,54 @@ https://hub.docker.com/_/postgres
 docker build -t bareos-dir .
 ```
 
-## Required Catalog (Postgres DB)
+## Required Catalog (Postgres DB) via container
 
 ### dev-net
-Development only docker network to enable inter container communication:
+Docker network to enable inter container communication:
 ```shell
-docker network create devnet
-docker network ls
-docker network inspect devnet
+docker network create bareosnet
+docker network list
+docker network inspect bareosnet
+# and to remove:
+docker network remove bareosnet
 ```
 
 ### bareos-db
 Example docker invocation of Postgres 14 as our 'remote' Catalog DB host:
 ```shell
 docker run --name bareos-db -e POSTGRES_PASSWORD=pg-admin-pass -e POSTGRES_INITDB_ARGS=--encoding=SQL_ASCII\
- -v ./catalog:/var/lib/postgresql/data --network=devnet -d postgres:14
+ -v ./catalog:/var/lib/postgresql/data --network=bareosnet -d postgres:14
+# and to remove
+docker remove bareos-db
 ```
 
-## Local Run
+## Run Director container 
 
 ```shell
-docker run --name bareos-dir
-# mount local ./config & ./data dir (bareos:bareos assumed) at /etc/bareos & /var/lib/bareos within container:
-docker run --name bareos-dir -u 105 -it -e DB_ADMIN_USER='postgres' -e DB_ADMIN_PASSWORD='pg-admin-pass'\
+# skip entrypoint and run 'sh' instead:
+docker run --name bareos-dir -u 105 -it --entrypoint sh bareos-dir
+# Mount e.g. local ./config & ./data dirs (bareos:bareos assumed) at /etc/bareos & /var/lib/bareos within container:
+# Non-production passwords for testing only:
+docker run --name bareos-dir -u 105 -it\
+ -e DB_ADMIN_USER='postgres' -e DB_ADMIN_PASSWORD='pg-admin-pass'\
  -e DB_HOST='bareos-db' -e DB_PORT='5432' -e DB_NAME='bareos' -e DB_USER='bareos' -e DB_PASSWORD='bareos-db-user-pass'\
+ -e DB_INIT='true'\
  -e BAREOS_SD_HOST='bareos-sd' -e BAREOS_SD_PASSWORD='bareos-sd-pass'\
  -e BAREOS_FD_HOST='bareos-fd' -e BAREOS_FD_PASSWORD='bareos-fd-pass'\
- -e BAREOS_WEBUI_PASSWORD='webui-pass' -v ./config:/etc/bareos -v ./data:/var/lib/bareos\
- -e BAREOS_BCONSOLE_PASSWORD='bconsole-pass'\
- --network=devnet bareos-dir sh
-#
-# skip entrypoint and run shell
-docker run --name bareos-dir -u 105 -it --entrypoint sh bareos-director
+ -e BAREOS_WEBUI_PASSWORD='webui-pass'\
+ -v ./config:/etc/bareos -v ./data:/var/lib/bareos\
+ --network=bareosnet bareos-dir sh
+# and to remove
+docker remove bareos-dir
 ```
 
-## Interactive shell
+## Interactive shell / bconsole
 
+Once the bareos-dir container is running:
 ```
 docker exec -it bareos-dir sh
+# Director's 'localhost' bconsole:
+bconsole
 ```
 
 ## BareOS rpm package scriptlet actions
