@@ -80,13 +80,29 @@ and finally create the flag file /etc/bareos/bareos-db.control.
 
 This container includes a local bconsole client install,
 pre-configured via upstream package scripts with this containers 'Director' credentials.
-See:
+The default bconsole.conf has no named console, and so uses the "anonymous" or "default" console.
+As such the installed `bconsole` CLI client has full privileges.
+See: https://docs.bareos.org/Configuration/Director.html#console-resource
 - /etc/bareos/bareos-dir.d/director/bareos-dir.conf
 - /etc/bareos/bconsole.conf
 
 ### WEBUI credentials
 
-- BAREOS_WEBUI_PASSWORD
+See: https://docs.bareos.org/IntroductionAndTutorial/BareosWebui.html#bareos-webui
+To cater for the Bareos WebUI this docker image definition installs a "named" console,
+also known as a "Restricted Console".
+Console's configuration file (Director’s configuration end):
+See: https://docs.bareos.org/Configuration/Console.html#console-configuration
+And: https://docs.bareos.org/IntroductionAndTutorial/BareosWebui.html#section-webui-console
+- /etc/bareos/bareos-dir.d/console/admin.conf  # from image root via sed password edit.
+
+The above non-default 'admin' console, in turn, resources a similarly non-default profile.
+See: https://docs.bareos.org/IntroductionAndTutorial/BareosWebui.html#section-webui-profile
+- /etc/bareos/bareos-dir.d/profile/webui-admin.conf  # from image root, copied in as-is.
+
+See upstream console-resource link in 'Bconsole CLI client config' section in this README.
+
+- BAREOS_WEBUI_PASSWORD: used to establish /etc/bareos/bareos-dir.d/console/admin.conf
 
 ## Local Build
 - -t tag <name>
@@ -132,7 +148,7 @@ docker run --name bareos-dir -u 105 -it\
  -e BAREOS_FD_HOST='bareos-fd' -e BAREOS_FD_PASSWORD='bareos-fd-pass'\
  -e BAREOS_WEBUI_PASSWORD='webui-pass'\
  -v ./config:/etc/bareos -v ./data:/var/lib/bareos\
- --network=bareosnet bareos-dir sh
+ --network=bareosnet bareos-dir
 # and to remove
 docker remove bareos-dir
 ```
