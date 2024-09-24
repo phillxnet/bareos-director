@@ -108,7 +108,7 @@ See upstream console-resource link in 'Bconsole CLI client config' section in th
 - -t tag <name>
 - . indicates from-current directory
 
-```
+```shell
 docker build -t bareos-dir .
 ```
 
@@ -140,7 +140,7 @@ docker remove bareos-db
 docker run --name bareos-dir -u 105 -it --entrypoint sh bareos-dir
 # Mount e.g. local ./config & ./data dirs (bareos:bareos assumed) at /etc/bareos & /var/lib/bareos within container:
 # Non-production passwords for testing only:
-docker run --name bareos-dir -u 105 -it\
+docker run --name bareos-dir -u 105\
  -e DB_ADMIN_USER='postgres' -e DB_ADMIN_PASSWORD='pg-admin-pass'\
  -e DB_HOST='bareos-db' -e DB_PORT='5432' -e DB_NAME='bareos' -e DB_USER='bareos' -e DB_PASSWORD='bareos-db-user-pass'\
  -e DB_INIT='true'\
@@ -156,7 +156,7 @@ docker remove bareos-dir
 ## Interactive shell / bconsole
 
 Once the bareos-dir container is running:
-```
+```shell
 docker exec -it bareos-dir sh
 # Director's 'localhost' bconsole:
 bconsole
